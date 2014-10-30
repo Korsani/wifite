@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 # -*- coding: utf-8 -*-
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
 """
     wifite
@@ -167,6 +168,10 @@ class RunConfiguration:
 
         self.TX_POWER = 0  # Transmit power for wireless interface, 0 uses default power
 
+        self.SCANNING_TIME = 10
+        self.ONLY_ONE = False
+        self.CRACKED_FILE = 'cracked.csv'
+
         # WPA variables
         self.WPA_DISABLE = False  # Flag to skip WPA handshake capture
         self.WPA_STRIP_HANDSHAKE = True  # Use pyrit or tshark (if applicable) to strip handshake
@@ -271,7 +276,7 @@ class RunConfiguration:
             Saves cracked access point key and info to a file.
         """
         self.CRACKED_TARGETS.append(target)
-        with open('cracked.csv', 'wb') as csvfile:
+        with open(self.CRACKED_FILE, 'wb') as csvfile:
             targetwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for target in self.CRACKED_TARGETS:
                 targetwriter.writerow([target.bssid, target.encryption, target.ssid, target.key, target.wps])
@@ -281,8 +286,8 @@ class RunConfiguration:
             Loads info about cracked access points into list, returns list.
         """
         result = []
-        if not os.path.exists('cracked.csv'): return result
-        with open('cracked.csv', 'rb') as csvfile:
+        if not os.path.exists(self.CRACKED_FILE): return result
+        with open(self.CRACKED_FILE, 'rb') as csvfile:
             targetreader = csv.reader(csvfile, delimiter=',', quotechar='"')
             for row in targetreader:
                 t = Target(row[0], 0, 0, 0, row[1], row[2])
@@ -296,18 +301,18 @@ class RunConfiguration:
                 Loads info about cracked access points into list, returns list.
         """
         result = []
-        if not os.path.exists('cracked.txt'):
+        if not os.path.exists(self.CRACKED_FILE):
             return result
-        fin = open('cracked.txt', 'r')
+        fin = open(self.CRACKED_FILE, 'r')
         lines = fin.read().split('\n')
         fin.close()
 
         for line in lines:
-            fields = line.split(chr(0))
+            fields = line.split(',')
             if len(fields) <= 3:
                 continue
             tar = Target(fields[0], '', '', '', fields[3], fields[1])
-            tar.key = fields[2]
+            tar.key = fields[3]
             result.append(tar)
         return result
 
@@ -373,6 +378,13 @@ class RunConfiguration:
                     print O + ' [!]' + R + ' no channel given!' + W
                 else:
                     print GR + ' [+]' + W + ' channel set to %s' % (G + str(self.TARGET_CHANNEL) + W)
+            if options.scanning_time:
+                self.SCANNING_TIME = int(options.scanning_time)
+            if options.only_one:
+                self.ONLY_ONE = options.only_one
+            if options.save_file:
+                self.CRACKED_FILE = options.save_file
+                print GR + ' [+]' + W + ' save cracked AP to %s' % (G + str(self.CRACKED_FILE) + W)
             if options.mac_anon:
                 print GR + ' [+]' + W + ' mac address anonymizing ' + G + 'enabled' + W
                 print O + '      not: only works if device is not already in monitor mode!' + W
@@ -403,6 +415,8 @@ class RunConfiguration:
             if options.all:
                 self.ATTACK_ALL_TARGETS = True
                 print GR + ' [+]' + W + ' targeting ' + G + 'all access points' + W
+            if options.scanning_time:
+                print GR + ' [+]' + W + ' scanning for ' + G + options.scanning_time + 's' + W
             if options.power:
                 try:
                     self.ATTACK_MIN_POWER = int(options.power)
@@ -441,7 +455,7 @@ class RunConfiguration:
                 exit(0)
             if options.cracked:
                 if len(self.CRACKED_TARGETS) == 0:
-                    print R + ' [!]' + O + ' There are no cracked access points saved to ' + R + 'cracked.db\n' + W
+                    print R + ' [!]' + O + ' There are no cracked access points saved to ' + R + self.CRACKED_FILE + '\n' + W
                     self.exit_gracefully(1)
                 print GR + ' [+]' + W + ' ' + W + 'previously cracked access points' + W + ':'
                 for victim in self.CRACKED_TARGETS:
@@ -640,6 +654,9 @@ class RunConfiguration:
         global_group.add_argument('--mon-iface', help='Interface already in monitor mode.', action='store',
                                   dest='monitor_interface')
         global_group.add_argument('-c', help='Channel to scan for targets.', action='store', dest='channel')
+        global_group.add_argument('--scan-time', help='Scanning time before performing attack', action='store', dest='scanning_time')
+        global_group.add_argument('-1', help="Crack one targe and exit", action='store_true', dest='only_one')
+        global_group.add_argument('--save-file', help="CSV file to save SSID and keys of cracked AP", action='store', dest='save_file')
         global_group.add_argument('-e', help='Target a specific access point by ssid (name).', action='store',
                                   dest='essid')
         global_group.add_argument('-b', help='Target a specific access point by bssid (mac).', action='store',
@@ -1113,13 +1130,13 @@ class RunEngine:
                             stop_scanning = True
                             break
 
-                # If user has chosen to target all access points, wait 20 seconds, then return all
-                if self.RUN_CONFIG.ATTACK_ALL_TARGETS and time.time() - time_started > 10:
+                # If user has chosen to target all access points, wait x seconds, then return all
+                if self.RUN_CONFIG.ATTACK_ALL_TARGETS and time.time() - time_started > self.RUN_CONFIG.SCANNING_TIME:
                     print GR + '\n [+]' + W + ' auto-targeted %s%d%s access point%s' % (
                     G, len(targets), W, '' if len(targets) == 1 else 's')
                     stop_scanning = True
 
-                if self.RUN_CONFIG.ATTACK_MIN_POWER > 0 and time.time() - time_started > 10:
+                if self.RUN_CONFIG.ATTACK_MIN_POWER > 0 and time.time() - time_started > self.RUN_CONFIG.SCANNING_TIME:
                     # Remove targets with power < threshold
                     i = 0
                     before_count = len(targets)
@@ -1418,6 +1435,8 @@ class RunEngine:
         wep_total = 0
 
         self.RUN_CONFIG.TARGETS_REMAINING = len(targets)
+        # Sort by decreasing power, so that cracking starts by closest
+        targets = sorted(targets, key=lambda t: t.power, reverse=True)
         for t in targets:
             self.RUN_CONFIG.TARGETS_REMAINING -= 1
 
@@ -1455,6 +1474,7 @@ class RunEngine:
 
             # If user wants to stop attacking
             if self.RUN_CONFIG.TARGETS_REMAINING <= 0: break
+            if wep_success == 1 and self.RUN_CONFIG.ONLY_ONE == True: break
 
         if wpa_total + wep_total > 0:
             # Attacks are done! Show results to user
