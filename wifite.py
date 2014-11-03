@@ -171,6 +171,7 @@ class RunConfiguration:
         self.SCANNING_TIME = 10
         self.ONLY_ONE = False
         self.CRACKED_FILE = 'cracked.csv'
+        self.AVOID_SSID = ''
 
         # WPA variables
         self.WPA_DISABLE = False  # Flag to skip WPA handshake capture
@@ -380,6 +381,8 @@ class RunConfiguration:
                     print GR + ' [+]' + W + ' channel set to %s' % (G + str(self.TARGET_CHANNEL) + W)
             if options.scanning_time:
                 self.SCANNING_TIME = int(options.scanning_time)
+            if options.avoid_ssid:
+                self.AVOID_SSID = options.avoid_ssid
             if options.only_one:
                 self.ONLY_ONE = options.only_one
             if options.save_file:
@@ -646,6 +649,7 @@ class RunConfiguration:
         # set global
         global_group = option_parser.add_argument_group('GLOBAL')
         global_group.add_argument('--all', help='Attack all targets.', default=False, action='store_true', dest='all')
+        global_group.add_argument('--avoid-ssid', help='Do not attack this ssid, even if it not already been attacked', default=False, action='store', dest='avoid_ssid')
         global_group.add_argument('-all', help=argparse.SUPPRESS, default=False, action='store_true', dest='all')
         global_group.add_argument('-i', help='Wireless interface for capturing.', action='store', dest='interface')
         global_group.add_argument('--mac', help='Anonymize MAC address.', action='store_true', default=False,
@@ -1465,9 +1469,12 @@ class RunEngine:
 
             elif t.encryption.find('WEP') != -1:
                 wep_total += 1
-                wep_attack = WEPAttack(iface, t, ts_clients, self.RUN_CONFIG)
-                if wep_attack.RunAttack():
-                    wep_success += 1
+                if t.ssid != self.RUN_CONFIG.AVOID_SSID:
+                    wep_attack = WEPAttack(iface, t, ts_clients, self.RUN_CONFIG)
+                    if wep_attack.RunAttack():
+                        wep_success += 1
+                else:
+                    print GR + " [+]" + W + " " + t.ssid + ' avoided'
 
             else:
                 print R + ' unknown encryption:', t.encryption, W
