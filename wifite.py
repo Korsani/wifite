@@ -384,7 +384,7 @@ class RunConfiguration:
             if options.avoid_ssid:
                 self.AVOID_SSID = options.avoid_ssid
             if options.only_one:
-                self.ONLY_ONE = options.only_one
+                self.ONLY_ONE = True
             if options.save_file:
                 self.CRACKED_FILE = options.save_file
                 print GR + ' [+]' + W + ' save cracked AP to %s' % (G + str(self.CRACKED_FILE) + W)
@@ -420,6 +420,8 @@ class RunConfiguration:
                 print GR + ' [+]' + W + ' targeting ' + G + 'all access points' + W
             if options.scanning_time:
                 print GR + ' [+]' + W + ' scanning for ' + G + options.scanning_time + 's' + W
+            if options.only_one:
+                print GR + ' [+]' + W + ' crack first target then exit ' + W
             if options.power:
                 try:
                     self.ATTACK_MIN_POWER = int(options.power)
@@ -659,7 +661,7 @@ class RunConfiguration:
                                   dest='monitor_interface')
         global_group.add_argument('-c', help='Channel to scan for targets.', action='store', dest='channel')
         global_group.add_argument('--scan-time', help='Scanning time before performing attack', action='store', dest='scanning_time')
-        global_group.add_argument('-1', help="Crack one targe and exit", action='store_true', dest='only_one')
+        global_group.add_argument('-1', help="Crack first target then exit", action='store_true', dest='only_one')
         global_group.add_argument('--save-file', help="CSV file to save SSID and keys of cracked AP", action='store', dest='save_file')
         global_group.add_argument('-e', help='Target a specific access point by ssid (name).', action='store',
                                   dest='essid')
@@ -1478,10 +1480,10 @@ class RunEngine:
 
             else:
                 print R + ' unknown encryption:', t.encryption, W
-
             # If user wants to stop attacking
             if self.RUN_CONFIG.TARGETS_REMAINING <= 0: break
-            if wep_success == 1 and self.RUN_CONFIG.ONLY_ONE == True: break
+	    # or I'm requested to crack only one
+            if (wep_success >= 1 or wpa_success >=1 ) and self.RUN_CONFIG.ONLY_ONE == True: break
 
         if wpa_total + wep_total > 0:
             # Attacks are done! Show results to user
@@ -2147,7 +2149,7 @@ class WPAAttack(Attack):
         '''
             Abstract method for initializing the WPA attack
         '''
-        self.wpa_get_handshake()
+        return self.wpa_get_handshake()
 
     def EndAttack(self):
         '''
@@ -2671,7 +2673,7 @@ class WEPAttack(Attack):
         '''
             Abstract method for dispatching the WEP crack
         '''
-        self.attack_wep()
+        return self.attack_wep()
 
     def EndAttack(self):
         '''
@@ -3057,6 +3059,7 @@ class WEPAttack(Attack):
                 remove_file(filename)
         remove_airodump_files(self.RUN_CONFIG.temp + 'wep')
         remove_file(self.RUN_CONFIG.temp + 'wepkey.txt')
+        return successful
 
     def wep_fake_auth(self, iface, target, time_to_display):
         """
@@ -3220,7 +3223,7 @@ class WPSAttack(Attack):
         '''
             Abstract method for initializing the WPS attack
         '''
-        self.attack_wps()
+        return self.attack_wps()
 
     def EndAttack(self):
         '''
