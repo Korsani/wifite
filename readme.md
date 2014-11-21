@@ -11,6 +11,11 @@ The biggest change from version 1 is support for ["reaver"](http://reaver-wps.go
 
 Other changes include a complete code re-write with bug fixes and added stability.  Due to problems with the Python Tkinter suite, the GUI has been left out of this latest version.
 
+Added in this fork :
+* -1, to crack only the first (and most powerful) AP
+* --avoid-ssid, to avoid cracking a specific ssid (you own AP, for example)
+* --save-file, to save data of cracked AP in a specific file
+* And small debugs
 
 About
 -----
@@ -29,7 +34,7 @@ Execution
 
 To download and execute wifite, run the commands below:
 
-`wget https://raw.github.com/derv82/wifite/master/wifite.py`  
+`wget https://github.com/Korsani/wifite/raw/master/wifite.py`  
 `chmod +x wifite.py`  
 `./wifite.py`  
 

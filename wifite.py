@@ -9,6 +9,7 @@
     author: derv82 at gmail
     author: bwall @botnet_hunter (ballastsec@gmail.com)
     author: drone @dronesec (ballastsec@gmail.com)
+    author: korsani@free.fr
 
     Thanks to everyone that contributed to this project.
     If you helped in the past and want your name here, shoot me an email
