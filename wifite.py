@@ -1021,7 +1021,7 @@ class RunEngine:
 
         proc = Popen(['airmon-ng'], stdout=PIPE, stderr=DN)
         for line in proc.communicate()[0].split('\n'):
-            if len(line) == 0 or line.startswith('Interface'): continue
+            if len(line) == 0 or line.startswith('PHY'): continue
             monitors.append(line)
 
         if len(monitors) == 0:
@@ -1029,11 +1029,11 @@ class RunEngine:
             print R + ' [!]' + O + " you need to plug in a wifi device or install drivers.\n" + W
             self.RUN_CONFIG.exit_gracefully(0)
         elif self.RUN_CONFIG.WIRELESS_IFACE != '' and monitors.count(self.RUN_CONFIG.WIRELESS_IFACE) > 0:
-            monitor = monitors[0][:monitors[0].find('\t')]
+            monitor = re.split(r'\t+',monitors[0])[1]
             return self.enable_monitor_mode(monitor)
 
         elif len(monitors) == 1:
-            monitor = monitors[0][:monitors[0].find('\t')]
+            monitor = re.split(r'\t+',monitors[0])[1]
             return self.enable_monitor_mode(monitor)
 
         print GR + " [+]" + W + " available wireless devices:"
