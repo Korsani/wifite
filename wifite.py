@@ -168,7 +168,7 @@ class RunConfiguration:
 
         self.TX_POWER = 0  # Transmit power for wireless interface, 0 uses default power
 
-        self.SCANNING_TIME = 10
+        self.SCANNING_TIME = 10		# seconds
         self.ONLY_ONE = False
         self.CRACKED_FILE = 'cracked.csv'
         self.AVOID_SSID = ''
@@ -1137,12 +1137,12 @@ class RunEngine:
                             break
 
                 # If user has chosen to target all access points, wait x seconds, then return all
-                if self.RUN_CONFIG.ATTACK_ALL_TARGETS and time.time() - time_started > self.RUN_CONFIG.SCANNING_TIME:
+                if self.RUN_CONFIG.ATTACK_ALL_TARGETS and time.time() - time_started >= self.RUN_CONFIG.SCANNING_TIME:
                     print GR + '\n [+]' + W + ' auto-targeted %s%d%s access point%s' % (
                     G, len(targets), W, '' if len(targets) == 1 else 's')
                     stop_scanning = True
 
-                if self.RUN_CONFIG.ATTACK_MIN_POWER > 0 and time.time() - time_started > self.RUN_CONFIG.SCANNING_TIME:
+                if self.RUN_CONFIG.ATTACK_MIN_POWER > 0 and time.time() - time_started >= self.RUN_CONFIG.SCANNING_TIME:
                     # Remove targets with power < threshold
                     i = 0
                     before_count = len(targets)
