@@ -1475,7 +1475,7 @@ class RunEngine:
                     wep_attack = WEPAttack(iface, t, ts_clients, self.RUN_CONFIG)
                     if wep_attack.RunAttack():
                         wep_success += 1
-                else:
+                elif t.ssid != '' :
                     print GR + " [+]" + W + " " + t.ssid + ' avoided'
 
             else:
