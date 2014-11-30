@@ -94,6 +94,7 @@ import re  # RegEx, Converting SSID to filename
 import argparse  # arg parsing
 import urllib  # Check for new versions from the repo
 import abc  # abstract base class libraries for attack templates
+import pcd8544.lcd as lcd
 
 
 ################################
@@ -171,6 +172,7 @@ class RunConfiguration:
 
         self.SCANNING_TIME = 10		# seconds
         self.ONLY_ONE = False
+        self.LCD = False
         self.CRACKED_FILE = 'cracked.csv'
         self.AVOID_SSID = ''
 
@@ -278,10 +280,20 @@ class RunConfiguration:
             Saves cracked access point key and info to a file.
         """
         self.CRACKED_TARGETS.append(target)
+        line=0
+        if self.LCD:
+            lcd.cls()
+            lcd.backlight(1)
         with open(self.CRACKED_FILE, 'wb') as csvfile:
             targetwriter = csv.writer(csvfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for target in self.CRACKED_TARGETS:
                 targetwriter.writerow([target.bssid, target.encryption, target.ssid, target.key, target.wps])
+                lcd.locate(0,line)
+                line=line+1
+                lcd.text(target.ssid)
+                lcd.locate(0,line)
+                line=line+1
+                lcd.text(target.key)
 
     def load_cracked(self):
         """
@@ -335,6 +347,9 @@ class RunConfiguration:
         mac_change_back()
         print GR + " [+]" + W + " quitting"  # wifite will now exit"
         print ''
+        if self.LCD:
+            lcd.cls()
+            lcd.backlight(0)
         # GTFO
         exit(code)
 
@@ -386,6 +401,14 @@ class RunConfiguration:
                 self.AVOID_SSID = options.avoid_ssid
             if options.only_one:
                 self.ONLY_ONE = True
+            if options.lcd:
+                self.LCD = True
+                lcd.init()
+                lcd.cls()
+                lcd.backlight(0)
+                lcd.set_contrast(190)
+                lcd.locate(4,0)
+                lcd.text('Wifite')
             if options.save_file:
                 self.CRACKED_FILE = options.save_file
                 print GR + ' [+]' + W + ' save cracked AP to %s' % (G + str(self.CRACKED_FILE) + W)
@@ -651,7 +674,7 @@ class RunConfiguration:
 
         # set global
         global_group = option_parser.add_argument_group('GLOBAL')
-        global_group.add_argument('--all', help='Attack all targets.', default=False, action='store_true', dest='all')
+        global_group.add_argument('--all', help='Attack all targets after scanning for --scan-time seconds', default=False, action='store_true', dest='all')
         global_group.add_argument('--avoid-ssid', help='Do not attack this ssid, even if it not already been attacked', default=False, action='store', dest='avoid_ssid')
         global_group.add_argument('-all', help=argparse.SUPPRESS, default=False, action='store_true', dest='all')
         global_group.add_argument('-i', help='Wireless interface for capturing.', action='store', dest='interface')
@@ -663,6 +686,7 @@ class RunConfiguration:
         global_group.add_argument('-c', help='Channel to scan for targets.', action='store', dest='channel')
         global_group.add_argument('--scan-time', help='Scanning time before performing attack', action='store', dest='scanning_time')
         global_group.add_argument('-1', help="Crack first target then exit", action='store_true', dest='only_one')
+        global_group.add_argument('--lcd', help="Display infos on LCD", action='store_true', dest='lcd')
         global_group.add_argument('--save-file', help="CSV file to save SSID and keys of cracked AP", action='store', dest='save_file')
         global_group.add_argument('-e', help='Target a specific access point by ssid (name).', action='store',
                                   dest='essid')
@@ -1028,6 +1052,10 @@ class RunEngine:
         if len(monitors) == 0:
             print R + ' [!]' + O + " no wireless interfaces were found." + W
             print R + ' [!]' + O + " you need to plug in a wifi device or install drivers.\n" + W
+            if self.RUN_CONFIG.LCD:
+                lcd.locate(0,1)
+                lcd.text('No wireless!')
+                time.sleep(3)
             self.RUN_CONFIG.exit_gracefully(0)
         elif self.RUN_CONFIG.WIRELESS_IFACE != '' and monitors.count(self.RUN_CONFIG.WIRELESS_IFACE) > 0:
             monitor = re.split(r'\t+',monitors[0])[1]
