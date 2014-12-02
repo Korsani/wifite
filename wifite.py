@@ -1099,6 +1099,10 @@ class RunEngine:
         proc = Popen(command, stdout=DN, stderr=DN)
 
         time_started = time.time()
+       	if self.RUN_CONFIG.LCD:
+            lcd.cls()
+            lcd.locate(0,0)
+            lcd.text('Scanning ('+str(self.RUN_CONFIG.SCANNING_TIME)+'s)')
         print GR + ' [+] ' + G + 'initializing scan' + W + ' (' + G + iface + W + '), updates at 5 sec intervals, ' + G + 'CTRL+C' + W + ' when ready.'
         (targets, clients) = ([], [])
         try:
@@ -1227,6 +1231,9 @@ class RunEngine:
                     'BSSID              ' if self.RUN_CONFIG.SHOW_MAC_IN_SCAN else '')
                     print '   --- --------------------  %s--  ----  -----  ----  ------' % (
                     '-----------------  ' if self.RUN_CONFIG.SHOW_MAC_IN_SCAN else '')
+                    if self.RUN_CONFIG.LCD: 
+                        y=0 
+                        lcd.cls() 
                     for i, target in enumerate(targets):
                         print "   %s%2d%s " % (G, i + 1, W),
                         # SSID
@@ -1240,6 +1247,10 @@ class RunEngine:
                             print "%s" % C + target.ssid.ljust(20) + W,
                         else:
                             print "%s" % C + target.ssid[0:17] + '...' + W,
+                        if self.RUN_CONFIG.LCD:
+                            lcd.locate(0,y)
+                            y+=1
+                            lcd.text(target.ssid[0:14])
                         # BSSID
                         if self.RUN_CONFIG.SHOW_MAC_IN_SCAN:
                             print O, target.bssid + W,
@@ -1281,7 +1292,6 @@ class RunEngine:
                     GR + sec_to_hms(time.time() - time_started) + W, G + 'scanning' + W,
                     G + str(len(targets)) + W, '' if len(targets) == 1 else 's',
                     G + str(len(clients)) + W, '' if len(clients) == 1 else 's'),
-
                 stdout.flush()
         except KeyboardInterrupt:
             pass
@@ -1511,7 +1521,7 @@ class RunEngine:
                 print R + ' unknown encryption:', t.encryption, W
             # If user wants to stop attacking
             if self.RUN_CONFIG.TARGETS_REMAINING <= 0: break
-	    # or I'm requested to crack only one
+            # or I'm requested to crack only one
             if (wep_success >= 1 or wpa_success >=1 ) and self.RUN_CONFIG.ONLY_ONE == True: break
 
         if wpa_total + wep_total > 0:
@@ -2732,7 +2742,6 @@ class WEPAttack(Attack):
 
         print ' %s preparing attack "%s" (%s)' % \
               (GR + sec_to_hms(self.RUN_CONFIG.WEP_TIMEOUT) + W, G + self.target.ssid + W, G + self.target.bssid + W)
-
         remove_airodump_files(self.RUN_CONFIG.temp + 'wep')
         remove_file(self.RUN_CONFIG.temp + 'wepkey.txt')
 
@@ -2791,6 +2800,10 @@ class WEPAttack(Attack):
                     send_interrupt(proc_aireplay)
                 proc_aireplay = Popen(cmd, stdout=DN, stderr=DN)
 
+                if self.RUN_CONFIG.LCD: 
+                    lcd.cls()
+                    lcd.locate(0,0)
+                    lcd.text('->'+self.target.ssid)
                 print '\r %s attacking "%s" via' % (
                 GR + sec_to_hms(self.RUN_CONFIG.WEP_TIMEOUT) + W, G + self.target.ssid + W),
                 if attack_num == 0:
@@ -2806,7 +2819,6 @@ class WEPAttack(Attack):
                 elif attack_num == 5:
                     print G + 'hirte',
                 print 'attack' + W
-
                 print ' %s captured %s%d%s ivs @ %s iv/sec' % (
                 GR + sec_to_hms(self.RUN_CONFIG.WEP_TIMEOUT) + W, G, total_ivs, W, G + '0' + W),
                 stdout.flush()
@@ -2839,6 +2851,12 @@ class WEPAttack(Attack):
                         print "\r                                                   ",
                         print "\r %s captured %s%d%s ivs @ %s%d%s iv/sec" % \
                               (GR + current_hms + W, G, total_ivs + ivs, W, G, (ivs - last_ivs) / 5, W),
+                        if self.RUN_CONFIG.LCD:
+                            lcd.cls()
+                            lcd.locate(0,0)
+                            lcd.text(self.target.ssid)
+                            lcd.locate(0,1)
+                            lcd.text(str(ivs)+' ivs')
 
                         if ivs - last_ivs == 0 and time.time() - last_deauth > 30:
                             print "\r %s deauthing to generate packets..." % (GR + current_hms + W),
