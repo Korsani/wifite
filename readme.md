@@ -3,19 +3,23 @@ wifite
 
 An automated wireless attack tool.
 
+In this fork
+-------------
+
+* --etcd ETCD_DIR   : Store status in /ETCD_DIR/status of [etcd](https://github.com/coreos/etcd), and cracked keys in /cracked/history/ (for ever) and /cracked/last24/ (long for 24h). For example /cracked/history/MySSID would contain 'NotSureAnymore'
+* --lcd             : Display infos on lcd, with lib [wiringPi](https://github.com/rm-hull/pcd8544.git)
+* --avoid-ssid      : Avoid cracking a specific ssid (you own AP, for example)
+* -1                : Crack only first (and most powerful) AP then exit
+* --scan-time TIME  : Scan for TIME seconds before attacking
+* --save-file FILE  : Save to FILE instead of cracked.csv in the directory where wifite.py was run from
 
 What's New?
 -----------
 
+
 The biggest change from version 1 is support for ["reaver"](http://reaver-wps.googlecode.com/), a Wifi-Protected Setup (WPS) attack tool.  Reaver can compromise the PIN and PSK for many routers that have WPS enabled, usually within hours.
 
 Other changes include a complete code re-write with bug fixes and added stability.  Due to problems with the Python Tkinter suite, the GUI has been left out of this latest version.
-
-Added in this fork :
-* -1, to crack only the first (and most powerful) AP
-* --avoid-ssid, to avoid cracking a specific ssid (you own AP, for example)
-* --save-file, to save data of cracked AP in a specific file
-* And small debugs
 
 About
 -----
